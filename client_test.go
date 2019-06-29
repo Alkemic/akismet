@@ -54,6 +54,12 @@ func TestNewAkismetCheck(t *testing.T) {
 		}
 	}
 
+	validComment := &Comment{
+		//CommentType: "comment",
+		UserIP:    "0.0.0.0",
+		UserAgent: "Mozilla/6.16",
+	}
+
 	tests := []struct {
 		name               string
 		comment            *Comment
@@ -61,45 +67,37 @@ func TestNewAkismetCheck(t *testing.T) {
 		responseStatusCode int
 		checks             []check
 	}{{
-		name: "success with 'true' as a response",
-		comment: &Comment{
-			CommentType: "comment",
-		},
+		name:               "success with 'true' as a response",
+		comment:            validComment,
 		responseBody:       "true",
 		responseStatusCode: 200,
 		checks: checks(
 			hasNoError,
 			hasResult(true),
-			hasPayload("blog=&comment_type=comment"),
+			hasPayload("blog=http%3A%2F%2Fsome-blog.com&user_agent=Mozilla%2F6.16&user_ip=0.0.0.0"),
 		),
 	}, {
-		name: "success with 'false' as a response",
-		comment: &Comment{
-			CommentType: "comment",
-		},
+		name:               "success with 'false' as a response",
+		comment:            validComment,
 		responseBody:       "false",
 		responseStatusCode: 200,
 		checks: checks(
 			hasNoError,
 			hasResult(false),
-			hasPayload("blog=&comment_type=comment"),
+			hasPayload("blog=http%3A%2F%2Fsome-blog.com&user_agent=Mozilla%2F6.16&user_ip=0.0.0.0"),
 		),
 	}, {
-		name: "error when status code is not OK",
-		comment: &Comment{
-			CommentType: "comment",
-		},
+		name:               "error when status code is not OK",
+		comment:            validComment,
 		responseStatusCode: 418,
 		checks: checks(
 			hasCauseError(ErrNonOKStatusCode),
 			hasErrorMsg("error during comment check request: got status code 418: akismet API returned non 200 status code"),
-			hasPayload("blog=&comment_type=comment"),
+			hasPayload("blog=http%3A%2F%2Fsome-blog.com&user_agent=Mozilla%2F6.16&user_ip=0.0.0.0"),
 		),
 	}, {
-		name: "error when got unusual response with 'false' as a response",
-		comment: &Comment{
-			CommentType: "comment",
-		},
+		name:               "error when got unusual response with 'false' as a response",
+		comment:            validComment,
 		responseBody:       "Missing required field: user_ip.",
 		responseStatusCode: 200,
 		checks: checks(
@@ -126,9 +124,10 @@ func TestNewAkismetCheck(t *testing.T) {
 			defer ts.Close()
 
 			cli := &akismetClient{
+				key:        "asd",
+				blogUrl:    "http://some-blog.com",
 				httpClient: &http.Client{},
 				akismetUrl: ts.URL + "/%s/%s",
-				key:        "asd",
 			}
 			result, err := cli.Check(context.Background(), tt.comment)
 			for _, ch := range tt.checks {

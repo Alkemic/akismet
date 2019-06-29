@@ -21,6 +21,7 @@ func main() {
 		CommentType:   "comment",
 		CommentAuthor: "viagra-test-123",
 		UserIP:        "8.8.8.8",
+		UserAgent:     "Mozilla/6.1.6",
 	})
 	if err != nil {
 		log.Fatalf("got error: %v", err)

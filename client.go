@@ -47,9 +47,11 @@ func NewAkismet(key, blogUrl string, optFns ...OptFn) *akismetClient {
 
 // Check call Akismet's check comment endpoint and return true or false along with error that indicates error during process.
 func (a *akismetClient) Check(ctx context.Context, c *Comment) (bool, error) {
+	if err := c.Validate(); err != nil {
+		return false, errors.Wrap(err, "error validating comment struct")
+	}
 	url := fmt.Sprintf(a.akismetUrl, a.key, commentCheckEndpoint)
 	payload := c.toValues()
-	payload.Add("blog", a.blogUrl)
 	respBody, err := a.post(ctx, url, payload)
 	if err != nil {
 		return true, errors.Wrap(err, "error during comment check request")

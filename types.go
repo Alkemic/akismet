@@ -2,6 +2,9 @@ package akismet
 
 import (
 	"net/url"
+	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Comment struct represents all information that will be send to endpoint.
@@ -26,12 +29,8 @@ type Comment struct {
 
 func (c *Comment) toValues() *url.Values {
 	p := &url.Values{}
-	if c.UserIP != "" {
-		p.Add("user_ip", c.UserIP)
-	}
-	if c.UserAgent != "" {
-		p.Add("user_agent", c.UserAgent)
-	}
+	p.Add("user_ip", c.UserIP)
+	p.Add("user_agent", c.UserAgent)
 	if c.Referrer != "" {
 		p.Add("referrer", c.Referrer)
 	}
@@ -75,4 +74,26 @@ func (c *Comment) toValues() *url.Values {
 		p.Add("recheck_reason", c.RecheckReason)
 	}
 	return p
+}
+
+func (c *Comment) Validate() error {
+	if c.UserIP == "" {
+		return errors.New("field user ip is required")
+	}
+	if c.UserAgent == "" {
+		return errors.New("field user agent is required")
+	}
+	if c.CommentDateGMT != "" {
+		_, err := time.Parse(time.RFC3339, c.CommentDateGMT)
+		if err != nil {
+			return errors.Wrap(err, "cannot parse created date")
+		}
+	}
+	if c.CommentPostModifiedGMT != "" {
+		_, err := time.Parse(time.RFC3339, c.CommentPostModifiedGMT)
+		if err != nil {
+			return errors.Wrap(err, "cannot parse modified date")
+		}
+	}
+	return nil
 }

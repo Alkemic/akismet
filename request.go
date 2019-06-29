@@ -13,6 +13,7 @@ import (
 var ErrNonOKStatusCode = errors.New("akismet API returned non 200 status code")
 
 func (a *akismetClient) post(ctx context.Context, url string, payload *url.Values) (string, error) {
+	payload.Add("blog", a.blogUrl)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBufferString(payload.Encode()))
 	if err != nil {
 		return "", errors.Wrap(err, "error creating HTTP request")
