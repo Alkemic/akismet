@@ -9,7 +9,6 @@ type OptFn func(c *akismetClient)
 func defaultOpts(c *akismetClient) {
 	c.httpClient = &http.Client{}
 	c.akismetUrl = akismetUrl
-
 }
 
 // WithHttpClient is client functional option to set custom httpClient.

@@ -5,12 +5,14 @@ import (
 	stderr "errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	commentCheckEndpoint = "comment-check"
+	commentCheckEndpoint    = "comment-check"
+	keyVerificationEndpoint = "verify-key"
 )
 
 var (
@@ -50,9 +52,9 @@ func (a *akismetClient) Check(ctx context.Context, c *Comment) (bool, error) {
 	if err := c.Validate(); err != nil {
 		return false, errors.Wrap(err, "error validating comment struct")
 	}
-	url := fmt.Sprintf(a.akismetUrl, a.key, commentCheckEndpoint)
+	commentCheckUrl := fmt.Sprintf(a.akismetUrl, a.key, commentCheckEndpoint)
 	payload := c.toValues()
-	respBody, err := a.post(ctx, url, payload)
+	respBody, err := a.post(ctx, commentCheckUrl, payload)
 	if err != nil {
 		return true, errors.Wrap(err, "error during comment check request")
 	}
@@ -65,4 +67,24 @@ func (a *akismetClient) Check(ctx context.Context, c *Comment) (bool, error) {
 	}
 
 	return true, errors.Wrapf(ErrUnusualResponse, "got response: '%s'", respBody)
+}
+
+// Verify call Akismet's key verification endpoint and return true or false along with error that indicates error during process.
+func (a *akismetClient) Verify(ctx context.Context) (bool, error) {
+	payload := &url.Values{}
+	payload.Add("key", a.key)
+	verifyUrl := fmt.Sprintf(a.akismetUrl, a.key, keyVerificationEndpoint)
+	respBody, err := a.post(ctx, verifyUrl, payload)
+	if err != nil {
+		return false, errors.Wrap(err, "error during comment check request")
+	}
+
+	if respBody == "valid" {
+		return true, nil
+	}
+	if respBody == "invalid" {
+		return false, nil
+	}
+
+	return false, errors.Wrapf(ErrUnusualResponse, "got response: '%s'", respBody)
 }
