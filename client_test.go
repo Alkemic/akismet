@@ -103,6 +103,13 @@ func TestAkismetCheck(t *testing.T) {
 			hasCauseError(ErrUnusualResponse),
 			hasErrorMsg("got response: 'Missing required field: user_ip.': got unusual response"),
 		),
+	}, {
+		name:         "error when comment validation fails",
+		comment:      &Comment{},
+		responseBody: "Missing required field: user_ip.",
+		checks: checks(
+			hasErrorMsg("error validating comment struct: field user ip is required"),
+		),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
