@@ -7,12 +7,58 @@ A GO Akismet client, made for easy use and testing
 
 ## Usage
 
+Validate you key:
+
+```go
+akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
+ctx := context.Background()
+validated, err := akismetClient.Valid(ctx)
+
+if err != nil {
+	// handle error
+}
+```
+
 Check if comment is a SPAM:
 
 ```go
 akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 isSpam, err := akismetClient.Check(ctx, &akismet.Comment{
+    CommentType:   "comment",
+    Blog:          "http://some-blog.com",
+    CommentAuthor: "author",
+    UserIP:        "8.8.8.8",
+})
+
+if err != nil {
+	// handle error
+}
+```
+
+Submit SPAM:
+
+```go
+akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
+ctx := context.Background()
+err := akismetClient.SubmitSpam(ctx, &akismet.Comment{
+    CommentType:   "comment",
+    Blog:          "http://some-blog.com",
+    CommentAuthor: "author",
+    UserIP:        "8.8.8.8",
+})
+
+if err != nil {
+	// handle error
+}
+```
+
+Submit HAM (aka false positive):
+
+```go
+akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
+ctx := context.Background()
+err := akismetClient.SubmitHam(ctx, &akismet.Comment{
     CommentType:   "comment",
     Blog:          "http://some-blog.com",
     CommentAuthor: "author",
