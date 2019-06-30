@@ -16,7 +16,11 @@ var (
 func main() {
 	flag.Parse()
 
-	client := akismet.NewAkismet(*key, *blogUrl)
+	client, err := akismet.NewAkismet(*key, *blogUrl)
+	if err != nil {
+		log.Fatalf("error creating client instance: %v", err)
+	}
+
 	verified, err := client.Verify(context.Background())
 	if err != nil {
 		log.Fatalf("got error: %v", err)

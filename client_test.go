@@ -6,10 +6,99 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/pkg/errors"
 )
+
+func TestNewAkismet(t *testing.T) {
+	type check func(client *akismetClient, err error, t *testing.T)
+	checks := func(cs ...check) []check { return cs }
+
+	hasCauseError := func(exp error) check {
+		return func(_ *akismetClient, err error, t *testing.T) {
+			t.Helper()
+			if errors.Cause(err) != exp {
+				t.Errorf("Expected error cause to be '%v', but got '%v'", exp, err)
+			}
+		}
+	}
+	hasErrorMsg := func(expMsg string) check {
+		return func(_ *akismetClient, err error, t *testing.T) {
+			t.Helper()
+			if err == nil || err.Error() != expMsg {
+				t.Errorf("Expected error cause to be '%v', but got '%v'", expMsg, err)
+			}
+		}
+	}
+	hasNoError := func(_ *akismetClient, err error, t *testing.T) {
+		t.Helper()
+		if err != nil {
+			t.Errorf("Expected error to be nil, but got '%v'", err)
+		}
+	}
+	hasClient := func(expClient *akismetClient) check {
+		return func(client *akismetClient, _ error, t *testing.T) {
+			t.Helper()
+			if !reflect.DeepEqual(expClient, client) {
+				t.Errorf("Expected Akismet client to be '%v', but got '%v'", expClient, client)
+			}
+		}
+	}
+
+	tests := []struct {
+		name    string
+		key     string
+		blogUrl string
+		checks  []check
+	}{{
+		name: "error when no key provided",
+		checks: checks(
+			hasCauseError(ErrAPIKeyRequired),
+			hasErrorMsg("API key is required"),
+			hasClient(nil),
+		),
+	}, {
+		name: "error when no blog url provided",
+		key:  "deadbeef",
+		checks: checks(
+			hasCauseError(ErrBlogURLRequired),
+			hasErrorMsg("blog url is required"),
+			hasClient(nil),
+		),
+	}, {
+		name:    "error when invalid (not parsable) blog url provided",
+		key:     "deadbeef",
+		blogUrl: "deadbeef",
+		checks: checks(
+			hasCauseError(ErrBlogURLIncorrect),
+			hasErrorMsg("parse deadbeef: invalid URI for request: incorrect blog url"),
+			hasClient(nil),
+		),
+	}, {
+		name:    "success",
+		key:     "deadbeef",
+		blogUrl: "http://some-blog.com",
+		checks: checks(
+			hasNoError,
+			hasClient(&akismetClient{
+				key:        "deadbeef",
+				blogUrl:    "http://some-blog.com",
+				akismetUrl: "https://%s.rest.akismet.com/1.1/%s",
+				httpClient: &http.Client{},
+			}),
+		),
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cli, err := NewAkismet(tt.key, tt.blogUrl)
+			for _, ch := range tt.checks {
+				ch(cli, err, t)
+			}
+		})
+	}
+}
 
 func TestAkismetCheck(t *testing.T) {
 	type check func(result bool, err error, payload []byte, t *testing.T)

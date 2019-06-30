@@ -16,7 +16,11 @@ var (
 func main() {
 	flag.Parse()
 
-	client := akismet.NewAkismet(*key, *blogUrl)
+	client, err := akismet.NewAkismet(*key, *blogUrl)
+	if err != nil {
+		log.Fatalf("error creating client instance: %v", err)
+	}
+
 	isSpam, err := client.Check(context.Background(), &akismet.Comment{
 		CommentType:   "comment",
 		CommentAuthor: "viagra-test-123",

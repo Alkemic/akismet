@@ -23,6 +23,12 @@ var (
 	// ErrUnusualResponse indicates that we got response that we were not expecting, i.e.: comment check can return
 	// true or false, but also some error information.
 	ErrUnusualResponse = stderr.New("got unusual response")
+	// ErrAPIKeyRequired indicates that API key was not provided.
+	ErrAPIKeyRequired = stderr.New("API key is required")
+	// ErrAPIKeyRequired indicates that blog url was not provided.
+	ErrBlogURLRequired = stderr.New("blog url is required")
+	// ErrBlogURLIncorrect indicates that provided blog url is not valid, i.e. missing scheme.
+	ErrBlogURLIncorrect = stderr.New("incorrect blog url")
 )
 
 type akismetClient struct {
@@ -32,10 +38,16 @@ type akismetClient struct {
 	httpClient *http.Client
 }
 
-// NewAkismet returns new instance of Akismet client.
-func NewAkismet(key, blogUrl string, optFns ...OptFn) *akismetClient {
+// NewAkismet returns new instance of Akismet client with optional error.
+func NewAkismet(key, blogUrl string, optFns ...OptFn) (*akismetClient, error) {
 	if key == "" {
-		panic("API key is required")
+		return nil, ErrAPIKeyRequired
+	}
+	if blogUrl == "" {
+		return nil, ErrBlogURLRequired
+	}
+	if _, err := url.ParseRequestURI(blogUrl); err != nil {
+		return nil, errors.Wrap(ErrBlogURLIncorrect, err.Error())
 	}
 	client := &akismetClient{
 		blogUrl: blogUrl,
@@ -48,7 +60,7 @@ func NewAkismet(key, blogUrl string, optFns ...OptFn) *akismetClient {
 		fn(client)
 	}
 
-	return client
+	return client, nil
 }
 
 // Check calls Akismet's check comment endpoint and return true or false along with error that indicates error during process.
