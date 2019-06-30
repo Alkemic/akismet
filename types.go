@@ -76,6 +76,7 @@ func (c *Comment) toValues() *url.Values {
 	return p
 }
 
+// Validate checks if user ip and user agent are present, and if present validates create/update dates.
 func (c *Comment) Validate() error {
 	if c.UserIP == "" {
 		return errors.New("field user ip is required")
