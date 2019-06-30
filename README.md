@@ -23,3 +23,13 @@ if err != nil {
 	// handle error
 }
 ```
+
+## Advanced usage
+
+You can use your own `http.Client` instance with calls to API, just use `WithHttpClient` functional option:
+```go
+customHttpClient := &http.Client{
+	// your options here
+}
+akismet.NewClient("akismet-key", "http://some-blog.com", WithHttpClient(customHttpClient))
+```
