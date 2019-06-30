@@ -13,6 +13,10 @@ import (
 const (
 	commentCheckEndpoint    = "comment-check"
 	keyVerificationEndpoint = "verify-key"
+	submitSpamEndpoint      = "submit-spam"
+	submitHamEndpoint       = "submit-ham"
+
+	spamHamResponse = "Thanks for making the web a better place."
 )
 
 var (
@@ -47,7 +51,7 @@ func NewAkismet(key, blogUrl string, optFns ...OptFn) *akismetClient {
 	return client
 }
 
-// Check call Akismet's check comment endpoint and return true or false along with error that indicates error during process.
+// Check calls Akismet's check comment endpoint and return true or false along with error that indicates error during process.
 func (a *akismetClient) Check(ctx context.Context, c *Comment) (bool, error) {
 	if err := c.Validate(); err != nil {
 		return false, errors.Wrap(err, "error validating comment struct")
@@ -87,4 +91,42 @@ func (a *akismetClient) Verify(ctx context.Context) (bool, error) {
 	}
 
 	return false, errors.Wrapf(ErrUnusualResponse, "got response: '%s'", respBody)
+}
+
+// SubmitSpam calls Akismet's submit spam endpoint and error that indicates error during process.
+func (a *akismetClient) SubmitSpam(ctx context.Context, c *Comment) error {
+	if err := c.Validate(); err != nil {
+		return errors.Wrap(err, "error validating comment struct")
+	}
+	payload := c.toValues()
+	verifyUrl := fmt.Sprintf(a.akismetUrl, a.key, submitSpamEndpoint)
+	respBody, err := a.post(ctx, verifyUrl, payload)
+	if err != nil {
+		return errors.Wrap(err, "error during comment check request")
+	}
+
+	if respBody == spamHamResponse {
+		return nil
+	}
+
+	return errors.Wrapf(ErrUnusualResponse, "got response: '%s'", respBody)
+}
+
+// SubmitSpam calls Akismet's submit spam endpoint and error that indicates error during process.
+func (a *akismetClient) SubmitHam(ctx context.Context, c *Comment) error {
+	if err := c.Validate(); err != nil {
+		return errors.Wrap(err, "error validating comment struct")
+	}
+	payload := c.toValues()
+	verifyUrl := fmt.Sprintf(a.akismetUrl, a.key, submitHamEndpoint)
+	respBody, err := a.post(ctx, verifyUrl, payload)
+	if err != nil {
+		return errors.Wrap(err, "error during comment check request")
+	}
+
+	if respBody == spamHamResponse {
+		return nil
+	}
+
+	return errors.Wrapf(ErrUnusualResponse, "got response: '%s'", respBody)
 }
