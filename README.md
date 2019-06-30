@@ -25,10 +25,9 @@ Check if comment is a SPAM:
 akismetClient, _ := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 isSpam, err := akismetClient.Check(ctx, &akismet.Comment{
-    CommentType:   "comment",
-    Blog:          "http://some-blog.com",
-    CommentAuthor: "author",
-    UserIP:        "8.8.8.8",
+    Type:   "comment",
+    Author: "John Doe",
+    UserIP: "1.2.3.4",
 })
 
 if err != nil {
@@ -42,10 +41,9 @@ Submit SPAM:
 akismetClient, _ := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 err := akismetClient.SubmitSpam(ctx, &akismet.Comment{
-    CommentType:   "comment",
-    Blog:          "http://some-blog.com",
-    CommentAuthor: "author",
-    UserIP:        "8.8.8.8",
+    Type:   "comment",
+    Author: "John Doe",
+    UserIP: "1.2.3.4",
 })
 
 if err != nil {
@@ -59,10 +57,9 @@ Submit HAM (aka false positive):
 akismetClient, _ := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 err := akismetClient.SubmitHam(ctx, &akismet.Comment{
-    CommentType:   "comment",
-    Blog:          "http://some-blog.com",
-    CommentAuthor: "author",
-    UserIP:        "8.8.8.8",
+    Type:   "comment",
+    Author: "John Doe",
+    UserIP: "1.2.3.4",
 })
 
 if err != nil {

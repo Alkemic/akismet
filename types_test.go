@@ -25,10 +25,10 @@ func TestCommentValidate(t *testing.T) {
 	}
 
 	validComment := &Comment{
-		UserIP:                 "8.8.8.8",
-		UserAgent:              "Mozilla/6.1.6",
-		CommentDateGMT:         time.Now().Format(time.RFC3339),
-		CommentPostModifiedGMT: time.Now().Format(time.RFC3339),
+		UserIP:    "8.8.8.8",
+		UserAgent: "Mozilla/6.1.6",
+		Created:   time.Now().Format(time.RFC3339),
+		Modified:  time.Now().Format(time.RFC3339),
 	}
 
 	tests := []struct {
@@ -52,9 +52,9 @@ func TestCommentValidate(t *testing.T) {
 	}, {
 		name: "error on invalid create date",
 		comment: &Comment{
-			UserIP:         "8.8.8.8",
-			UserAgent:      "Mozilla/6.1.6",
-			CommentDateGMT: "asdad",
+			UserIP:    "8.8.8.8",
+			UserAgent: "Mozilla/6.1.6",
+			Created:   "asdad",
 		},
 		checks: checks(
 			hasErrorMsg(`cannot parse created date: parsing time "asdad" as "2006-01-02T15:04:05Z07:00": cannot parse "asdad" as "2006"`),
@@ -62,9 +62,9 @@ func TestCommentValidate(t *testing.T) {
 	}, {
 		name: "error on invalid modified date",
 		comment: &Comment{
-			UserIP:                 "8.8.8.8",
-			UserAgent:              "Mozilla/6.1.6",
-			CommentPostModifiedGMT: "asdad",
+			UserIP:    "8.8.8.8",
+			UserAgent: "Mozilla/6.1.6",
+			Modified:  "asdad",
 		},
 		checks: checks(
 			hasErrorMsg(`cannot parse modified date: parsing time "asdad" as "2006-01-02T15:04:05Z07:00": cannot parse "asdad" as "2006"`),

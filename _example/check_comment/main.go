@@ -22,10 +22,10 @@ func main() {
 	}
 
 	isSpam, err := client.Check(context.Background(), &akismet.Comment{
-		CommentType:   "comment",
-		CommentAuthor: "viagra-test-123",
-		UserIP:        "8.8.8.8",
-		UserAgent:     "Mozilla/6.1.6",
+		Type:      "comment",
+		Author:    "viagra-test-123",
+		UserIP:    "8.8.8.8",
+		UserAgent: "Mozilla/6.1.6",
 	})
 	if err != nil {
 		log.Fatalf("got error: %v", err)
