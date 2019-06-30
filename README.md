@@ -10,7 +10,7 @@ A GO Akismet client, made for easy use and testing
 Validate you key:
 
 ```go
-akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
+akismetClient, _ := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 validated, err := akismetClient.Valid(ctx)
 
@@ -22,7 +22,7 @@ if err != nil {
 Check if comment is a SPAM:
 
 ```go
-akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
+akismetClient, _ := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 isSpam, err := akismetClient.Check(ctx, &akismet.Comment{
     CommentType:   "comment",
@@ -39,7 +39,7 @@ if err != nil {
 Submit SPAM:
 
 ```go
-akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
+akismetClient, _ := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 err := akismetClient.SubmitSpam(ctx, &akismet.Comment{
     CommentType:   "comment",
@@ -56,7 +56,7 @@ if err != nil {
 Submit HAM (aka false positive):
 
 ```go
-akismetClient := akismet.NewClient("akismet-key", "http://some-blog.com")
+akismetClient, _ := akismet.NewClient("akismet-key", "http://some-blog.com")
 ctx := context.Background()
 err := akismetClient.SubmitHam(ctx, &akismet.Comment{
     CommentType:   "comment",
