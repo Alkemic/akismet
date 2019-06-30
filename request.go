@@ -30,7 +30,6 @@ func (a *akismetClient) post(ctx context.Context, url string, payload *url.Value
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-
 	if err != nil {
 		return "", errors.Wrap(err, "can't read response body")
 	}

@@ -1,13 +1,16 @@
 package akismet
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -138,7 +141,7 @@ func TestAkismetCheck(t *testing.T) {
 		return func(_ bool, _ error, payload []byte, t *testing.T) {
 			t.Helper()
 			if string(payload) != expPayload {
-				t.Errorf("Expected requst payload to be '%s', but got '%s'", expPayload, string(payload))
+				t.Errorf("Expected requst payload to be \n'%s', but got \n'%s'", expPayload, string(payload))
 			}
 		}
 	}
@@ -146,6 +149,24 @@ func TestAkismetCheck(t *testing.T) {
 	validComment := &Comment{
 		UserIP:    "0.0.0.0",
 		UserAgent: "Mozilla/6.16",
+	}
+	filledComment := &Comment{
+		UserIP:                 "1",
+		UserAgent:              "2",
+		Referrer:               "3",
+		Permalink:              "4",
+		CommentType:            "5",
+		CommentAuthor:          "6",
+		CommentAuthorEmail:     "7",
+		CommentAuthorURL:       "8",
+		CommentContent:         "9",
+		BlogLang:               "10",
+		BlogCharset:            "11",
+		UserRole:               "12",
+		CommentDateGMT:         time.Date(2019, 6, 30, 13, 43, 12, 0, time.UTC).Format(time.RFC3339),
+		CommentPostModifiedGMT: time.Date(2019, 6, 30, 14, 43, 12, 0, time.UTC).Format(time.RFC3339),
+		IsTest:                 "13",
+		RecheckReason:          "14",
 	}
 
 	tests := []struct {
@@ -173,6 +194,16 @@ func TestAkismetCheck(t *testing.T) {
 			hasNoError,
 			hasResult(false),
 			hasPayload("blog=http%3A%2F%2Fsome-blog.com&user_agent=Mozilla%2F6.16&user_ip=0.0.0.0"),
+		),
+	}, {
+		name:               "success with full serialization",
+		comment:            filledComment,
+		responseBody:       "true",
+		responseStatusCode: 200,
+		checks: checks(
+			hasNoError,
+			hasResult(true),
+			hasPayload("blog=http%3A%2F%2Fsome-blog.com&blog_charset=11&blog_lang=10&comment_author=6&comment_author_email=7&comment_author_url=8&comment_content=9&comment_date_gmt=2019-06-30T13%3A43%3A12Z&comment_post_modified_gmt=2019-06-30T14%3A43%3A12Z&comment_type=5&is_test=13&permalink=4&recheck_reason=14&referrer=3&user_agent=2&user_ip=1&user_role=12"),
 		),
 	}, {
 		name:               "error when status code is not OK",
@@ -572,6 +603,126 @@ func TestAkismetSubmitHam(t *testing.T) {
 			err := cli.SubmitHam(context.Background(), tt.comment)
 			for _, ch := range tt.checks {
 				ch(err, buffer, t)
+			}
+		})
+	}
+}
+
+type transportMock struct {
+	roundTripResp *http.Response
+	roundTripErr  error
+}
+
+func (m *transportMock) RoundTrip(*http.Request) (*http.Response, error) {
+	return m.roundTripResp, m.roundTripErr
+}
+
+type nopCloserError struct{}
+
+func (nopCloserError) Read(p []byte) (n int, err error) {
+	return 0, errors.New("mocked error from nop closer")
+}
+
+func (nopCloserError) Close() error { return nil }
+
+func TestAkismetMaliciousResponses(t *testing.T) {
+	type check func(err error, t *testing.T)
+	checks := func(cs ...check) []check { return cs }
+
+	hasCauseError := func(exp error) check {
+		return func(err error, t *testing.T) {
+			t.Helper()
+			if errors.Cause(err) != exp {
+				t.Errorf("Expected error cause to be '%v', but got '%v'", exp, err)
+			}
+		}
+	}
+	hasErrorMsg := func(expMsg string) check {
+		return func(err error, t *testing.T) {
+			t.Helper()
+			if err == nil || err.Error() != expMsg {
+				t.Errorf("Expected error cause to be '%v', but got '%v'", expMsg, err)
+			}
+		}
+	}
+	hasNoError := func(err error, t *testing.T) {
+		t.Helper()
+		if err != nil {
+			t.Errorf("Expected error to be nil, but got '%v'", err)
+		}
+	}
+
+	tests := []struct {
+		name       string
+		httpClient *http.Client
+		url        string
+		checks     []check
+	}{{
+		name: "success when 'valid' as a response",
+		httpClient: &http.Client{
+			Transport: &transportMock{
+				roundTripResp: &http.Response{
+					StatusCode: 200,
+					Body:       ioutil.NopCloser(bytes.NewBufferString("ok")),
+				},
+			},
+		},
+		checks: checks(
+			hasNoError,
+		),
+	}, {
+		name: "error when processing new request",
+		url:  "^!@#$%^&*()",
+		checks: checks(
+			hasErrorMsg(`error creating HTTP request: parse ^!@#$%^&*(): invalid URL escape "%^&"`),
+		),
+	}, {
+		name: "error when can't do request",
+		httpClient: &http.Client{
+			Transport: &transportMock{
+				roundTripErr: errors.New("mocked error from transport"),
+			},
+		},
+		checks: checks(
+			hasErrorMsg("cannot do HTTP request: Post : mocked error from transport"),
+		),
+	}, {
+		name: "error when can't read body",
+		httpClient: &http.Client{
+			Transport: &transportMock{
+				roundTripResp: &http.Response{
+					StatusCode: 200,
+					Body:       nopCloserError{},
+				},
+			},
+		},
+		checks: checks(
+			hasErrorMsg("can't read response body: mocked error from nop closer"),
+		),
+	}, {
+		name: "error when got status code other than OK",
+		httpClient: &http.Client{
+			Transport: &transportMock{
+				roundTripResp: &http.Response{
+					StatusCode: 418,
+					Body:       ioutil.NopCloser(bytes.NewBufferString("ok")),
+				},
+			},
+		},
+		checks: checks(
+			hasCauseError(ErrNonOKStatusCode),
+			hasErrorMsg("got status code 418: akismet API returned non 200 status code"),
+		),
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cli := &akismetClient{
+				blogUrl:    "http://some-blog.com",
+				httpClient: tt.httpClient,
+			}
+			_, err := cli.post(context.Background(), tt.url, &url.Values{})
+			for _, ch := range tt.checks {
+				ch(err, t)
 			}
 		})
 	}
