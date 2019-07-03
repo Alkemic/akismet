@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 
-	"akismet"
+	"github.com/Alkemic/akismet"
 )
 
 var (
