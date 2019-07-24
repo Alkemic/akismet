@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrNonOKStatusCode returned when Akismet API returns non OK status, which shouldn't happen on normal usage.
 var ErrNonOKStatusCode = errors.New("akismet API returned non 200 status code")
 
 func (a *akismetClient) post(ctx context.Context, url string, payload *url.Values) (string, error) {

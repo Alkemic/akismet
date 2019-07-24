@@ -25,7 +25,7 @@ var (
 	ErrUnusualResponse = stderr.New("got unusual response")
 	// ErrAPIKeyRequired indicates that API key was not provided.
 	ErrAPIKeyRequired = stderr.New("API key is required")
-	// ErrAPIKeyRequired indicates that blog url was not provided.
+	// ErrBlogURLRequired indicates that blog url was not provided.
 	ErrBlogURLRequired = stderr.New("blog url is required")
 	// ErrBlogURLIncorrect indicates that provided blog url is not valid, i.e. missing scheme.
 	ErrBlogURLIncorrect = stderr.New("incorrect blog url")

@@ -4,6 +4,7 @@ import "net/http"
 
 const akismetUrl = "https://%s.rest.akismet.com/1.1/%s"
 
+// OptFn is a type for optional functional parameters to Akismet's client ctor.
 type OptFn func(c *akismetClient)
 
 func defaultOpts(c *akismetClient) {
